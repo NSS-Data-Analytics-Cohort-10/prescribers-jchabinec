@@ -8,8 +8,9 @@
 	GROUP BY npi
 	ORDER BY SUM(total_claim_count) DESC
 	LIMIT 1;
--- ANSWER: NPI # 1881634483, with 99,707 claims.
+	-- ANSWER: NPI # 1881634483, with 99,707 claims.
 --     b. Repeat the above, but this time report the nppes_provider_first_name, nppes_provider_last_org_name,  specialty_description, and the total number of claims.
+	-- ** Check from previous answer **
 	SELECT
 		npi,
 		nppes_provider_first_name,
@@ -17,15 +18,73 @@
 		specialty_description
 	FROM prescriber
 	WHERE npi = 1881634483;
+-- ** Now let's do it right... **
+	-- ** Start by finding the prescriber's name and find all records with that name **
+	SELECT
+		pr.npi,
+		pr.nppes_provider_first_name,
+		pr.nppes_provider_last_org_name,
+		pr.specialty_description,
+		ps.total_claim_count
+	FROM prescriber AS pr
+	INNER JOIN prescription AS ps
+		USING(npi)
+	WHERE npi IN
+		(
+		SELECT
+			npi
+		FROM prescription
+		GROUP BY npi
+		ORDER BY SUM(total_claim_count) DESC
+		LIMIT 1
+		);
+	-- ** Now add all the rows up to get the total claims **
 
--- ANSWER: Bruce Pendley, at a family practice, has the most claims
+	-- ANSWER: Bruce Pendley, at a family practice, has the most claims
 -- 2. 
 --     a. Which specialty had the most total number of claims (totaled over all drugs)?
-
+	SELECT
+		pr.specialty_description,
+		SUM(ps.total_claim_count) AS total_claims
+	FROM prescriber AS pr
+	LEFT JOIN prescription AS ps
+		USING(npi)
+	WHERE ps.total_claim_count IS NOT NULL
+	GROUP BY pr.specialty_description
+	ORDER BY SUM(total_claim_count) DESC
+	LIMIT 1;
+	-- ** ANSWER: Family Practice had the most claims across all drugs, with 9,752,347.
 --     b. Which specialty had the most total number of claims for opioids?
-
+	SELECT
+		pr.specialty_description,
+		SUM(ps.total_claim_count) AS total_claims
+	FROM prescriber AS pr
+	LEFT JOIN prescription AS ps
+		USING(npi)
+	WHERE
+		ps.total_claim_count IS NOT NULL
+		AND drug_name IN
+			(SELECT
+				drug_name
+			FROM drug
+			WHERE
+				opioid_drug_flag = 'Y'
+			)
+	GROUP BY pr.specialty_description
+	ORDER BY SUM(total_claim_count) DESC
+	LIMIT 1;
+	-- ** ANSWER: Nurse Practitioner had the most opoid claims, with 900,845.
 --     c. **Challenge Question:** Are there any specialties that appear in the prescriber table that have no associated prescriptions in the prescription table?
-
+	SELECT
+		pr.specialty_description,
+		SUM(ps.total_claim_count) AS total_claims
+	FROM prescriber AS pr
+	LEFT JOIN prescription AS ps
+		USING(npi)
+	WHERE
+		ps.total_claim_count IS NULL
+	GROUP BY pr.specialty_description;
+	-- ANSWER: Yes, there are 92 specialties with no associated prescriptions
 --     d. **Difficult Bonus:** *Do not attempt until you have solved all other problems!* For each specialty, report the percentage of total claims by that specialty which are for opioids. Which specialties have a high percentage of opioids?
 
 -- 3. 
