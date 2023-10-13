@@ -113,16 +113,43 @@
 	SELECT
 		drug_name,
 		CASE
-			WHEN opioid_drug_flag = 'Y' THEN 'opioid',
-			WHEN
-			WHEN
+			WHEN opioid_drug_flag = 'Y' THEN 'opioid'
+			WHEN antibiotic_drug_flag = 'Y' THEN 'antibiotic'
+			ELSE 'neither'
+		END AS drug_type
+	FROM drug;
 --     b. Building off of the query you wrote for part a, determine whether more was spent (total_drug_cost) on opioids or on antibiotics. Hint: Format the total costs as MONEY for easier comparision.
-
+	SELECT
+		CASE
+			WHEN d.opioid_drug_flag = 'Y' THEN 'opioid'
+			WHEN d.antibiotic_drug_flag = 'Y' THEN 'antibiotic'
+			ELSE 'neither'
+		END AS drug_type,
+		CAST(SUM(p.total_drug_cost) AS money) AS total_spent
+	FROM drug AS d
+	LEFT JOIN prescription AS p
+	USING(drug_name)
+	GROUP BY drug_type
+	ORDER BY total_spent DESC;
+	-- ANSWER: More was spent on opioids than antibiotics.
 -- 5. 
 --     a. How many CBSAs are in Tennessee? **Warning:** The cbsa table contains information for all states, not just Tennessee.
-
+	SELECT
+		COUNT(*) AS cbsa_tn
+	FROM cbsa
+	WHERE
+		cbsaname ILIKE '%, TN%';
+	-- ANSWER: There are 56 CBSAs in Tennessee.
 --     b. Which cbsa has the largest combined population? Which has the smallest? Report the CBSA name and total population.
-
+	SELECT
+		c.cbsaname,
+		SUM(p.population) AS total_population
+	FROM cbsa AS c
+	LEFT JOIN population AS p
+		USING(fipscounty)
+	WHERE 
+	GROUP BY c.cbsaname
+	ORDER BY total_population DESC;
 --     c. What is the largest (in terms of population) county which is not included in a CBSA? Report the county name and population.
 
 -- 6. 
