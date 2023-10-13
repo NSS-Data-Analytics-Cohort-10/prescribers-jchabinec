@@ -89,9 +89,25 @@
 
 -- 3. 
 --     a. Which drug (generic_name) had the highest total drug cost?
-
+	SELECT
+		d.generic_name,
+		CAST(p.total_drug_cost as money)
+	FROM prescription AS p
+	LEFT JOIN drug as d
+		USING(drug_name)
+	ORDER BY p.total_drug_cost DESC
+	LIMIT 1;
+	-- ANSWER: PIRFENIDONE, at a total cost of $2,829,174.30
 --     b. Which drug (generic_name) has the hightest total cost per day? **Bonus: Round your cost per day column to 2 decimal places. Google ROUND to see how this works.**
-
+	SELECT
+		d.generic_name,
+		CAST((p.total_drug_cost/p.total_day_supply) as money) AS daily_cost
+	FROM prescription AS p
+	LEFT JOIN drug as d
+		USING(drug_name)
+	ORDER BY daily_cost DESC
+	LIMIT 1;
+	-- ANSWER: IMMUN GLOB G(IGG)/GLY/IGA OV50, at a total cost of $7,141.11 / day
 -- 4. 
 --     a. For each drug in the drug table, return the drug name and then a column named 'drug_type' which says 'opioid' for drugs which have opioid_drug_flag = 'Y', says 'antibiotic' for those drugs which have antibiotic_drug_flag = 'Y', and says 'neither' for all other drugs.
 
