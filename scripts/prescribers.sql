@@ -110,7 +110,12 @@
 	-- ANSWER: IMMUN GLOB G(IGG)/GLY/IGA OV50, at a total cost of $7,141.11 / day
 -- 4. 
 --     a. For each drug in the drug table, return the drug name and then a column named 'drug_type' which says 'opioid' for drugs which have opioid_drug_flag = 'Y', says 'antibiotic' for those drugs which have antibiotic_drug_flag = 'Y', and says 'neither' for all other drugs.
-
+	SELECT
+		drug_name,
+		CASE
+			WHEN opioid_drug_flag = 'Y' THEN 'opioid',
+			WHEN
+			WHEN
 --     b. Building off of the query you wrote for part a, determine whether more was spent (total_drug_cost) on opioids or on antibiotics. Hint: Format the total costs as MONEY for easier comparision.
 
 -- 5. 
