@@ -9,6 +9,7 @@
 	ORDER BY SUM(total_claim_count) DESC
 	LIMIT 1;
 	-- ANSWER: NPI # 1881634483, with 99,707 claims.
+	
 --     b. Repeat the above, but this time report the nppes_provider_first_name, nppes_provider_last_org_name,  specialty_description, and the total number of claims.
 	-- ** Check from previous answer **
 	SELECT
@@ -39,8 +40,9 @@
 		LIMIT 1
 		);
 	-- ** Now add all the rows up to get the total claims **
-
 	-- ANSWER: Bruce Pendley, at a family practice, has the most claims
+
+
 -- 2. 
 --     a. Which specialty had the most total number of claims (totaled over all drugs)?
 	SELECT
@@ -54,6 +56,7 @@
 	ORDER BY SUM(total_claim_count) DESC
 	LIMIT 1;
 	-- ** ANSWER: Family Practice had the most claims across all drugs, with 9,752,347.
+
 --     b. Which specialty had the most total number of claims for opioids?
 	SELECT
 		pr.specialty_description,
@@ -74,6 +77,7 @@
 	ORDER BY SUM(total_claim_count) DESC
 	LIMIT 1;
 	-- ** ANSWER: Nurse Practitioner had the most opoid claims, with 900,845.
+
 --     c. **Challenge Question:** Are there any specialties that appear in the prescriber table that have no associated prescriptions in the prescription table?
 	SELECT
 		pr.specialty_description,
@@ -85,7 +89,9 @@
 		ps.total_claim_count IS NULL
 	GROUP BY pr.specialty_description;
 	-- ANSWER: Yes, there are 92 specialties with no associated prescriptions
+
 --     d. **Difficult Bonus:** *Do not attempt until you have solved all other problems!* For each specialty, report the percentage of total claims by that specialty which are for opioids. Which specialties have a high percentage of opioids?
+
 
 -- 3. 
 --     a. Which drug (generic_name) had the highest total drug cost?
@@ -98,6 +104,7 @@
 	ORDER BY p.total_drug_cost DESC
 	LIMIT 1;
 	-- ANSWER: PIRFENIDONE, at a total cost of $2,829,174.30
+
 --     b. Which drug (generic_name) has the hightest total cost per day? **Bonus: Round your cost per day column to 2 decimal places. Google ROUND to see how this works.**
 	SELECT
 		d.generic_name,
@@ -108,6 +115,7 @@
 	ORDER BY daily_cost DESC
 	LIMIT 1;
 	-- ANSWER: IMMUN GLOB G(IGG)/GLY/IGA OV50, at a total cost of $7,141.11 / day
+
 -- 4. 
 --     a. For each drug in the drug table, return the drug name and then a column named 'drug_type' which says 'opioid' for drugs which have opioid_drug_flag = 'Y', says 'antibiotic' for those drugs which have antibiotic_drug_flag = 'Y', and says 'neither' for all other drugs.
 	SELECT
@@ -118,6 +126,7 @@
 			ELSE 'neither'
 		END AS drug_type
 	FROM drug;
+
 --     b. Building off of the query you wrote for part a, determine whether more was spent (total_drug_cost) on opioids or on antibiotics. Hint: Format the total costs as MONEY for easier comparision.
 	SELECT
 		CASE
@@ -132,6 +141,8 @@
 	GROUP BY drug_type
 	ORDER BY total_spent DESC;
 	-- ANSWER: More was spent on opioids than antibiotics.
+	
+	
 -- 5. 
 --     a. How many CBSAs are in Tennessee? **Warning:** The cbsa table contains information for all states, not just Tennessee.
 	SELECT
@@ -140,28 +151,92 @@
 	WHERE
 		cbsaname ILIKE '%, TN%';
 	-- ANSWER: There are 56 CBSAs in Tennessee.
+	
 --     b. Which cbsa has the largest combined population? Which has the smallest? Report the CBSA name and total population.
 	SELECT
 		c.cbsaname,
 		SUM(p.population) AS total_population
 	FROM cbsa AS c
-	LEFT JOIN population AS p
+	INNER JOIN population AS p
 		USING(fipscounty)
-	WHERE 
 	GROUP BY c.cbsaname
-	ORDER BY total_population DESC;
+	ORDER BY total_population DESC
+	LIMIT 1;
+	-- ANSWER: Nashville-Davidson--Murfreesboro--Franklin, TN has teh largest population, with 1,830,410 people.
+	
 --     c. What is the largest (in terms of population) county which is not included in a CBSA? Report the county name and population.
+	SELECT 
+		f.county,
+		f.state,
+		p.population
+	FROM population AS p
+	LEFT JOIN fips_county AS f
+		USING(fipscounty)
+	WHERE fipscounty NOT IN
+		(
+		SELECT
+			fipscounty
+		FROM cbsa
+		)
+	ORDER BY population DESC;
+	-- ANSWER: Sevier County, TN is the largest county not included in a CBSA.
+
 
 -- 6. 
 --     a. Find all rows in the prescription table where total_claims is at least 3000. Report the drug_name and the total_claim_count.
+	SELECT
+		drug_name,
+		total_claim_count
+	FROM prescription
+	WHERE total_claim_count > 3000;
+	--ANSWER: There are 9 drugs with more than 3000 total claims - see query above.
 
 --     b. For each instance that you found in part a, add a column that indicates whether the drug is an opioid.
+	SELECT
+		p.drug_name,
+		CASE
+			WHEN d.opioid_drug_flag = 'Y' THEN 'opioid'
+		END AS drug_type,
+		p.total_claim_count
+	FROM prescription AS p
+	LEFT JOIN drug AS d
+		USING(drug_name)
+	WHERE total_claim_count > 3000;
+	-- ANSWER: Of the 9 drugs with more than 3000 total claims, OXYCODONE HCL and HYDROCODONE-ACETAMINOPHEN are opioids.
 
 --     c. Add another column to you answer from the previous part which gives the prescriber first and last name associated with each row.
+	SELECT
+		pr.nppes_provider_last_org_name,
+		pr.nppes_provider_first_name,
+		ps.drug_name,
+		CASE
+			WHEN d.opioid_drug_flag = 'Y' THEN 'opioid'
+		END AS drug_type,
+		ps.total_claim_count
+	FROM prescription AS ps
+	LEFT JOIN drug AS d
+		USING(drug_name)
+	LEFT JOIN prescriber AS pr
+		USING(npi)
+	WHERE total_claim_count > 3000;
+
 
 -- 7. The goal of this exercise is to generate a full list of all pain management specialists in Nashville and the number of claims they had for each opioid. **Hint:** The results from all 3 parts will have 637 rows.
 
 --     a. First, create a list of all npi/drug_name combinations for pain management specialists (specialty_description = 'Pain Management) in the city of Nashville (nppes_provider_city = 'NASHVILLE'), where the drug is an opioid (opiod_drug_flag = 'Y'). **Warning:** Double-check your query before running it. You will only need to use the prescriber and drug tables since you don't need the claims numbers yet.
+	SELECT
+		npi,
+		drug_name
+	FROM prescription
+	WHERE npi IN
+		(
+		SELECT
+			npi
+		FROM prescriber
+		WHERE
+			specialty_description ILIKE 'Pain Management'
+			AND nppes_provider_city ILIKE 'Nashville'
+		);
 
 --     b. Next, report the number of claims per drug per prescriber. Be sure to include all combinations, whether or not the prescriber had any claims. You should report the npi, the drug name, and the number of claims (total_claim_count).
     
