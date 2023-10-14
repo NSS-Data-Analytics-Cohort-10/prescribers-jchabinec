@@ -108,13 +108,25 @@
 --     b. Which drug (generic_name) has the hightest total cost per day? **Bonus: Round your cost per day column to 2 decimal places. Google ROUND to see how this works.**
 	SELECT
 		d.generic_name,
-		CAST((p.total_drug_cost/p.total_day_supply) as money) AS daily_cost
+		CAST(p.total_drug_cost/p.total_day_supply as money) AS daily_cost
 	FROM prescription AS p
 	LEFT JOIN drug as d
 		USING(drug_name)
 	ORDER BY daily_cost DESC
 	LIMIT 1;
 	-- ANSWER: IMMUN GLOB G(IGG)/GLY/IGA OV50, at a total cost of $7,141.11 / day
+
+-- ANSWER FROM Breakout Room discussion:
+	SELECT
+		generic_name,
+		CAST(ROUND((SUM(total_drug_cost)/SUM(total_day_supply)),2)AS money) as cost_per_day
+	FROM drug
+	FULL JOIN prescription
+		USING(drug_name)
+	WHERE total_drug_cost IS NOT NULL
+	GROUP BY generic_name
+	ORDER BY cost_per_day DESC
+
 
 -- 4. 
 --     a. For each drug in the drug table, return the drug name and then a column named 'drug_type' which says 'opioid' for drugs which have opioid_drug_flag = 'Y', says 'antibiotic' for those drugs which have antibiotic_drug_flag = 'Y', and says 'neither' for all other drugs.
@@ -146,11 +158,12 @@
 -- 5. 
 --     a. How many CBSAs are in Tennessee? **Warning:** The cbsa table contains information for all states, not just Tennessee.
 	SELECT
-		COUNT(*) AS cbsa_tn
+		DISTINCT(cbsa),
+		cbsaname
 	FROM cbsa
 	WHERE
 		cbsaname ILIKE '%, TN%';
-	-- ANSWER: There are 56 CBSAs in Tennessee.
+	-- ANSWER: There are 10 CBSAs in Tennessee.
 	
 --     b. Which cbsa has the largest combined population? Which has the smallest? Report the CBSA name and total population.
 	SELECT
@@ -160,15 +173,14 @@
 	INNER JOIN population AS p
 		USING(fipscounty)
 	GROUP BY c.cbsaname
-	ORDER BY total_population DESC
-	LIMIT 1;
-	-- ANSWER: Nashville-Davidson--Murfreesboro--Franklin, TN has teh largest population, with 1,830,410 people.
+	ORDER BY total_population DESC;
+	-- ANSWER: Nashville-Davidson--Murfreesboro--Franklin, TN has the largest population, with 1,830,410 people, while Morristown is teh smallest, with 116,352 people.
 	
 --     c. What is the largest (in terms of population) county which is not included in a CBSA? Report the county name and population.
 	SELECT 
 		f.county,
 		f.state,
-		p.population
+		TO_CHAR(p.population, 'fm999G999')
 	FROM population AS p
 	LEFT JOIN fips_county AS f
 		USING(fipscounty)
@@ -178,7 +190,8 @@
 			fipscounty
 		FROM cbsa
 		)
-	ORDER BY population DESC;
+	ORDER BY population DESC
+	LIMIT 1;
 	-- ANSWER: Sevier County, TN is the largest county not included in a CBSA.
 
 
@@ -225,10 +238,12 @@
 
 --     a. First, create a list of all npi/drug_name combinations for pain management specialists (specialty_description = 'Pain Management) in the city of Nashville (nppes_provider_city = 'NASHVILLE'), where the drug is an opioid (opiod_drug_flag = 'Y'). **Warning:** Double-check your query before running it. You will only need to use the prescriber and drug tables since you don't need the claims numbers yet.
 	SELECT
-		npi,
-		drug_name
-	FROM prescription
-	WHERE npi IN
+		p.npi,
+		p.drug_name
+	FROM prescription AS p
+	LEFT JOIN drug AS d
+	USING(drug_name)
+	WHERE p.npi IN
 		(
 		SELECT
 			npi
@@ -236,8 +251,11 @@
 		WHERE
 			specialty_description ILIKE 'Pain Management'
 			AND nppes_provider_city ILIKE 'Nashville'
-		);
+		)
+		AND d.opioid_drug_flag = 'Y';
 
 --     b. Next, report the number of claims per drug per prescriber. Be sure to include all combinations, whether or not the prescriber had any claims. You should report the npi, the drug name, and the number of claims (total_claim_count).
     
+	
+	
 --     c. Finally, if you have not done so already, fill in any missing values for total_claim_count with 0. Hint - Google the COALESCE function.
