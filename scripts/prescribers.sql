@@ -255,7 +255,22 @@
 		AND d.opioid_drug_flag = 'Y';
 
 --     b. Next, report the number of claims per drug per prescriber. Be sure to include all combinations, whether or not the prescriber had any claims. You should report the npi, the drug name, and the number of claims (total_claim_count).
-    
+    SELECT
+		npi,
+		drug_name,
+		total_claim_count
+	FROM prescription
+	WHERE npi IN
+		(
+		SELECT
+			npi
+		FROM prescriber
+		WHERE
+			specialty_description ILIKE 'Pain Management'
+			AND nppes_provider_city ILIKE 'Nashville'
+		)
+		opioid_drug_flag = 'Y';
+	
 	
 	
 --     c. Finally, if you have not done so already, fill in any missing values for total_claim_count with 0. Hint - Google the COALESCE function.
